@@ -30,6 +30,9 @@ It has been expanded to provide a plugin options page where the user can select 
 
 == Changelog ==
 
+= 1.0.3 =
+* update donate link
+
 = 1.0.2 =
 * fixed incorrect plugin settings link
 * fixed variable scope in javascript that was preventing plugin from working on multiple metaboxes
