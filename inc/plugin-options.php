@@ -27,28 +27,45 @@
                       <td>
 
                         <?php 
+
                         $args=array(
                             'public'   => true,
-                            'show_ui' => true
-                            
-                          );  
-                        $taxonomies = get_taxonomies($args); 
+                            'show_ui' => true,
+                            '_builtin' => true
+                          );
 
-                        if(!is_wp_error($taxonomies )) foreach ($taxonomies as $i=>$taxonomy) :
-                            $tax = get_taxonomy($taxonomy);
-                            
-                            $checked = is_array($options['taxonomies']) && in_array($taxonomy, $options['taxonomies']) ? 'checked="CHECKED"' : ''; ?>
-                            <input type="checkbox" name="radio_button_for_taxonomies_options[taxonomies][]" value="<?php echo $taxonomy;?>" <?php echo $checked;?> /> <?php echo $tax->labels->name; ?><br/>
+                        $defaults = get_taxonomies( $args, 'objects' ); 
+                        ksort( $defaults );
 
 
-                        <?php endforeach; ?>
+                        $args=array(
+                            'public'   => true,
+                            'show_ui' => true,
+                            '_builtin' => false
+                          );
+
+                        $custom = get_taxonomies( $args, 'objects' ); 
+                        ksort( $custom );
+
+
+                        $taxonomies = array_merge( $defaults , $custom );
+
+                        if( ! is_wp_error( $taxonomies ) ) { 
+
+                          foreach ($taxonomies as $i=>$taxonomy)  { ?>                            
+                            <input type="checkbox" name="radio_button_for_taxonomies_options[taxonomies][]" value="<?php echo $i;?>" <?php checked( isset($options['taxonomies']) && is_array($options['taxonomies']) && in_array($i, $options['taxonomies']), 1 ); ?> /> <?php echo $taxonomy->labels->name; ?><br/>
+
+                          <?php 
+                              } 
+
+                        } ?>
 
                       </td>
                     </tr>
                     <tr>
                       <th scope="row"><?php _e('Completely remove options on plugin removal');?></th>
                       <td>
-                        <input type="checkbox" name="radio_button_for_taxonomies_options[delete]" value="1" <?php checked($options['delete'], 'true');?> />
+                        <input type="checkbox" name="radio_button_for_taxonomies_options[delete]" value="1" <?php checked( isset( $options['delete'] ) && $options['delete'], 1 );?> />
                       </td>
                     </tr>
                   </table>

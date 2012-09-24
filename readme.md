@@ -4,18 +4,19 @@ Donate link: https://inspirepay.com/pay/helgatheviking
 Tags: taxonomy, admin, interface, ui, post, radio buttons
 Requires at least: 3.4   
 Tested up to: 3.4
-Stable tag: 1.0.3
+Stable tag: 1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html   
 
-The Radio Buttons for Taxonomies plugin lets you switch any taxonomy to a radio-button style metabox.
 
 ## Description
 
-This plugin is an evolution of the class by Stephen Harris:  
-https://github.com/stephenh1988/Radio-Buttons-for-Taxonomies
+This plugin lets you switch any taxonomy to a radio-button style metabox, so users can only select 1 term at a time.
 
-It has been expanded to provide a plugin options page where the user can select which taxonomies she'd like to switch to using the custom radio-button style metabox.  
+A plugin options page allows the user can select which taxonomies she'd like to switch to using the custom radio-button style metabox.  
+
+Based on the the class by Stephen Harris:  
+https://github.com/stephenh1988/Radio-Buttons-for-Taxonomies
 
 ## Installation
 
@@ -29,6 +30,14 @@ It has been expanded to provide a plugin options page where the user can select 
 2. This is what the metabox will look like on the post editor screen.
 
 ## Changelog
+
+### 1.1
+* Added columns to edit screen for every radio taxonomy
+* Add quick edit for all radio taxonomies
+* Enforce limit of single terms via save_post
+* fixed error with taxonomy object property not being loaded on the right hook
+* fixed uninstall hook
+* fixed saving of 'delete' option
 
 ### 1.0.3
 * updated donate link
