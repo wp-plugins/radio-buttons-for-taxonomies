@@ -4,7 +4,7 @@
 Plugin Name: Radio Buttons for Taxonomies
 Plugin URI: http://www.kathyisawesome.com/436/kia-subtitle/
 Description: Use radio buttons for any taxonomy
-Version: 1.1.1
+Version: 1.1.2
 Author: Kathy Darling
 Author URI: http://www.kathyisawesome.com
 License: GPL2
@@ -157,8 +157,6 @@ class Radio_Buttons_for_Taxonomies {
       if( ! isset( $options['taxonomies'] ) ) return;
       
       wp_enqueue_script( 'radiotax', plugins_url( 'js/radiotax.js', __FILE__ ), array( 'jquery' ), null, true ); 
-      //pass the radio taxonomies to a JS object
-      wp_localize_script( 'radiotax', 'radio_button_for_taxonomies', array( 'taxonomies' => $options['taxonomies'] ) );
 
     }
 

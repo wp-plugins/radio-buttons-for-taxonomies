@@ -2,7 +2,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
-if( !class_exists( 'WordPress_Radio_Taxonomy' )) :
+if( ! class_exists( 'WordPress_Radio_Taxonomy' ) ) :
 
 class WordPress_Radio_Taxonomy {
 
@@ -17,10 +17,10 @@ class WordPress_Radio_Taxonomy {
 		add_action( 'wp_loaded', array( &$this, 'get_taxonomy' ) );  
 
 		//Remove old taxonomy meta box  
-		add_action( 'admin_menu', array( &$this, 'remove_meta_box') );  
+		add_action( 'admin_menu', array( &$this, 'remove_meta_box' ) );  
 
 		//Add new taxonomy meta box  
-		add_action( 'add_meta_boxes', array( &$this, 'add_meta_box') );  
+		add_action( 'add_meta_boxes', array( &$this, 'add_meta_box' ) );  
 
 		//change checkboxes to radios
 		add_filter( 'wp_terms_checklist_args', array( &$this, 'filter_terms_checklist_args' ) );
@@ -55,7 +55,11 @@ class WordPress_Radio_Taxonomy {
 		$this->tax_obj = get_taxonomy( $this->taxonomy );
 	}
 
-
+	/**
+	 * Remove the default metabox
+	 *
+	 * @since 1.0
+	 */
 	public function remove_meta_box() {  
 		
 		if( ! is_wp_error( $this->tax_obj ) && isset($this->tax_obj->object_type) ) foreach ( $this->tax_obj->object_type as $post_type ):
@@ -64,6 +68,11 @@ class WordPress_Radio_Taxonomy {
 	   	endforeach; 
 	} 
 
+	/**
+	 * Add our new customized metabox
+	 *
+	 * @since 1.0
+	 */
 	public function add_meta_box() { 
 
 		if( ! is_wp_error( $this->tax_obj ) && isset($this->tax_obj->object_type ) ) foreach ( $this->tax_obj->object_type as $post_type ):
@@ -74,7 +83,11 @@ class WordPress_Radio_Taxonomy {
 	}  
         
 
-	//Callback to set up the metabox  
+	/**
+	 * Callback to set up the metabox  
+	 *
+	 * @since 1.0
+	 */
 	public function metabox( $post, $box ) {  
 		$defaults = array('taxonomy' => 'category');
 		if ( !isset($box['args']) || !is_array($box['args']) )
@@ -163,10 +176,14 @@ class WordPress_Radio_Taxonomy {
 			<?php endif; ?>
 		</div>
 	<?php
-}
+	}
 
+	/**
+	 * tell checklist function to use our new Walker 
+	 *
+	 * @since 1.1
+	 */
 	function filter_terms_checklist_args( $args ) {
-		//tell checklist function to use our new Walker
 	    if( isset($args['taxonomy']) && $this->taxonomy == $args['taxonomy'] ) { 
 	    	$args['walker'] = new Walker_Category_Radio;
 	    	$args['checked_ontop'] = false;
@@ -174,6 +191,11 @@ class WordPress_Radio_Taxonomy {
 	    return $args;
 	}
 
+	/**
+	 * Only ever save a single term
+	 *
+	 * @since 1.1
+	 */
 	function save_taxonomy_term ( $post_id ) {  
 
 		// make sure we're on a supported post type
@@ -212,11 +234,7 @@ class WordPress_Radio_Taxonomy {
 
 	  		//if somehow user is saving string of tags, split string and grab first
 	  		$terms = explode( ',' , $terms ) ;
-		    $terms = array_map( 
-		        function( $n ) { return trim( $n ); }, 
-		        $terms 
-		    ); 
-
+		    $terms = array_map( array( $this, 'array_map'), $terms ); 
 		    $terms = $terms[0];
 
 	  	}
@@ -227,6 +245,22 @@ class WordPress_Radio_Taxonomy {
 		return $post_id;	 
 	}
 
+	/**
+	 * Callback for array_map
+	 * since anonymous function isn't supported until PHP 5.3
+	 *
+	 * @since 1.1.2
+	 */
+	private function array_map ( $n ) {
+		
+		return trim( $n );
+	}
+
+	/**
+	 * Add new term from metabox
+	 *
+	 * @since 1.0
+	 */
 	public function ajax_add_term(){  
 
 		$taxonomy = ! empty( $_POST['taxonomy'] ) ? $_POST['taxonomy'] : '';
@@ -445,11 +479,6 @@ class WordPress_Radio_Taxonomy {
 		    $terms = array_values($single + $remainder);
 		    		   
 		}
-
-
-
-
-
 
 		return $terms;
 
