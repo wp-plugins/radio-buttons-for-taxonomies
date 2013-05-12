@@ -39,14 +39,16 @@ class Walker_Category_Radio extends Walker {
 
         //get first term object
         $current_term = ! empty( $checked_terms ) && ! is_wp_error( $checked_terms ) ? array_pop( $checked_terms ) : false;
-        $current_id = ( $current_term ) ? $current_term->term_id : '';
+
+        // if no term, match the 0 "no term" option
+        $current_id = ( $current_term ) ? $current_term->term_id : 0;
 
         //small tweak so that it works for both hierarchical and non-hierarchical tax
         $value = is_taxonomy_hierarchical( $taxonomy ) ? $term->term_id : $term->slug;
 
         $class = in_array( $term->term_id, $popular_cats ) ? ' class="popular-category"' : '';
 
-        $output .= sprintf( "\n" . '<li id="%1$-%2$s" %3$s><label class="selectit"><input id="%4$s" type="radio" name="%5$s" value="%6$s" %7$s %8$s/> %9$s</label>' ,
+        $output .= sprintf( "\n" . '<li id="%1$s-%2$s" %3$s><label class="selectit"><input id="%4$s" type="radio" name="%5$s" value="%6$s" %7$s %8$s/> %9$s</label>' ,
                 $taxonomy, //1
                 $value, //2
                 $class, //3
