@@ -25,6 +25,9 @@ class WordPress_Radio_Taxonomy {
 		//change checkboxes to radios
 		add_filter( 'wp_terms_checklist_args', array( &$this, 'filter_terms_checklist_args' ) );
 
+		// add a null term to metaboxes so users can unset term
+		add_filter( 'get_terms', array( &$this, 'get_terms' ), 10, 3 );
+
 		//Ajax callback for adding a non-hierarchical term
 		add_action( 'wp_ajax_radio_tax_add_taxterm', array( &$this, 'ajax_add_term' ) );
 
@@ -33,9 +36,6 @@ class WordPress_Radio_Taxonomy {
 
 		//add columns to the edit screen
 		add_filter( 'admin_init', array( &$this, 'add_columns_init' ), 20 );
-
-		//filter wp_get_object_terms to only show a single term
-		//add_filter( 'wp_get_object_terms', array( &$this, 'filter_object_terms' ), 10, 4 );
 
 		//never save more than 1 term ( possibly overkill )
 		add_action( 'save_post', array( &$this, 'save_taxonomy_term' ) );
@@ -196,6 +196,7 @@ class WordPress_Radio_Taxonomy {
 	    return $args;
 	}
 
+
 	/**
 	 * Only ever save a single term
 	 *
@@ -229,32 +230,43 @@ class WordPress_Radio_Taxonomy {
 	 	$terms = null;
 
 	  	// OK, we're authenticated: we need to find and save the data
-	  	if ( isset ( $_POST["radio_tax_input"]["{$this->taxonomy}"] ) )  {
+	  	if ( isset ( $_POST["radio_tax_input"]["{$this->taxonomy}"] ) )
 	  		$terms = $_POST["radio_tax_input"]["{$this->taxonomy}"];
-	  	}
 
-	  	// WordPress always saves a zero/null integer which we will want to skip
-	  	if ( is_array( $terms ) ) {
-	  		sort( $terms );
-	  		$terms = array_slice( $terms, 1, 1 ); //make sure we're only saving 1 term, but not index 0
 
-	  		//if hierarchical we need to ensure integers!
+	  	// should always be an array because WP saves a hidden 0 term
+
+	  if ( is_array( $terms ) ) {
+
+	  		// magically removes "0" terms
+	  		$terms = array_filter( $terms );
+
+	  		// make sure we're only saving 1 term
+	  		$terms = ( array ) array_shift( $terms );
+
+	  		// if hierarchical we need to ensure integers!
 	  		if ( is_taxonomy_hierarchical( $this->taxonomy ) ) { $terms = array_map( 'intval', $terms ); }
 
 	  	} else {
 
-	  		//if somehow user is saving string of tags, split string and grab first
+	  		// if somehow user is saving string of tags, split string and grab first
 	  		$terms = explode( ',' , $terms ) ;
 		   $terms = array_map( array( $this, 'array_map'), $terms );
 		   $terms = $terms[0];
 
 	  	}
 
-	  	//set the single term
+	  	// if category and not saving any terms, set to default
+	  	if ( 'category' == $this->taxonomy && empty ( $terms ) ) {
+	  		$terms = intval( get_option( 'default_category' ) );
+	  	}
+
+	  	// set the single term
 		wp_set_object_terms( $post_id, $terms, $this->taxonomy );
 
 		return $post_id;
 	}
+
 
 	/**
 	 * Callback for array_map
@@ -265,6 +277,25 @@ class WordPress_Radio_Taxonomy {
 	private function array_map ( $n ) {
 
 		return trim( $n );
+	}
+
+
+	/**
+	 * Add new 0 or null term in metabox and quickedit
+	 * this will allow users to "undo" a term if the taxonomy is not required
+	 *
+	 * @since 1.4
+	 */
+	function get_terms ( $terms, $taxonomies, $args ){
+
+		if ( is_admin() && ! is_wp_error( $screen = get_current_screen() ) && in_array( $screen->id, array( 'post', 'edit-post' ) ) ) {
+
+			if( ! in_array( 'category', $taxonomies ) ) {
+				$uncategorized = (object) array( 'term_id' => '0', 'slug' => '0', 'name' => 'No term' );
+				$terms['null'] = $uncategorized;
+			}
+		}
+		return $terms;
 	}
 
 	/**
@@ -432,7 +463,9 @@ class WordPress_Radio_Taxonomy {
 	 * @since 1.1
 	 */
 	function quick_edit_custom_box( $column_name, $screen ) {
-		if ( ! in_array ( $screen, $this->tax_obj->object_type ) || $column_name != 'radio-' . $this->taxonomy ) return false;
+
+		if ( ! is_array( $this->tax_obj->object_type ) || ! in_array ( $screen, $this->tax_obj->object_type ) || $column_name != 'radio-' . $this->taxonomy )
+			return false;
 
 	    //needs the same name as metabox nonce
 	    wp_nonce_field( "add-{$this->taxonomy}", "_ajax_nonce-add-{$this->taxonomy}", false );
@@ -452,35 +485,6 @@ class WordPress_Radio_Taxonomy {
 			</div>
 		</fieldset>
 		<?php
-	}
-
-	/**
-	 * Filter wp_get_object_terms to only show a single term for radio taxonomies
-	 *
-	 * @since 1.1
-	 */
-	function filter_object_terms( $terms, $object_ids, $taxonomies, $args ) {
-
-		if ( empty ( $terms ) ) return $terms;
-
-		if ( isset ( $args['fields'] ) && in_array( $args['fields'], array( 'all', 'all_with_object_id' ) ) ) {
-
-			//all the terms that are in this tax
-		    $matches = wp_filter_object_list( $terms, array( 'taxonomy' => $this->taxonomy ), 'and' );
-
-		    //all terms NOT in this tax
-		    $remainder = wp_filter_object_list( $terms, array( 'taxonomy' => $this->taxonomy ), 'not' );
-
-		    //get first term in this tax
-		    $single =  count( $matches ) > 1 ? array_slice( $matches, 0, 1) : $matches;
-
-		    //merge it back together
-		    $terms = array_values($single + $remainder);
-
-		}
-
-		return $terms;
-
 	}
 
 } //end class - do NOT remove or else
