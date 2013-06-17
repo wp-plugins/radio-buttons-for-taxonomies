@@ -14,34 +14,34 @@ class WordPress_Radio_Taxonomy {
 		$this->taxonomy = $taxonomy;
 
 		//get the taxonomy object - need to get it after init but before admin_menu
-		add_action( 'wp_loaded', array( &$this, 'get_taxonomy' ) );
+		add_action( 'wp_loaded', array( $this, 'get_taxonomy' ) );
 
 		//Remove old taxonomy meta box
-		add_action( 'admin_menu', array( &$this, 'remove_meta_box' ) );
+		add_action( 'admin_menu', array( $this, 'remove_meta_box' ) );
 
 		//Add new taxonomy meta box
-		add_action( 'add_meta_boxes', array( &$this, 'add_meta_box' ) );
+		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
 
 		//change checkboxes to radios
-		add_filter( 'wp_terms_checklist_args', array( &$this, 'filter_terms_checklist_args' ) );
+		add_filter( 'wp_terms_checklist_args', array( $this, 'filter_terms_checklist_args' ) );
 
 		// add a null term to metaboxes so users can unset term
-		add_filter( 'get_terms', array( &$this, 'get_terms' ), 10, 3 );
+		if( apply_filters( 'radio-buttons-for-taxonomies-no-term-' . $taxonomy, TRUE ) )add_filter( 'get_terms', array( $this, 'get_terms' ), 10, 3 );
 
 		//Ajax callback for adding a non-hierarchical term
-		add_action( 'wp_ajax_radio_tax_add_taxterm', array( &$this, 'ajax_add_term' ) );
+		add_action( 'wp_ajax_radio_tax_add_taxterm', array( $this, 'ajax_add_term' ) );
 
 		//disable the UI for non-hierarchical taxonomies that are using radio buttons on EDIT screen - irrelevant in 3.4.2
-		add_action( 'load-edit.php', array( &$this, 'disable_ui' ) );
+		add_action( 'load-edit.php', array( $this, 'disable_ui' ) );
 
 		//add columns to the edit screen
-		add_filter( 'admin_init', array( &$this, 'add_columns_init' ), 20 );
+		add_filter( 'admin_init', array( $this, 'add_columns_init' ), 20 );
 
 		//never save more than 1 term ( possibly overkill )
-		add_action( 'save_post', array( &$this, 'save_taxonomy_term' ) );
+		add_action( 'save_post', array( $this, 'save_taxonomy_term' ) );
 
 		//add to quick edit - irrelevant for wp 3.4.2
-		add_action( 'quick_edit_custom_box', array( &$this, 'quick_edit_custom_box' ), 10, 2);
+		add_action( 'quick_edit_custom_box', array( $this, 'quick_edit_custom_box' ), 10, 2);
 
 	}
 
@@ -78,7 +78,7 @@ class WordPress_Radio_Taxonomy {
 		if( ! is_wp_error( $this->tax_obj ) && isset($this->tax_obj->object_type ) ) foreach ( $this->tax_obj->object_type as $post_type ):
 			$label = $this->tax_obj->labels->name;
 			$id = ! is_taxonomy_hierarchical( $this->taxonomy ) ? 'radio-tagsdiv-'.$this->taxonomy : 'radio-' .$this->taxonomy .'div' ;
-			add_meta_box( $id, $label ,array( &$this,'metabox' ), $post_type ,'side','core', array( 'taxonomy'=>$this->taxonomy ) );
+			add_meta_box( $id, $label ,array( $this,'metabox' ), $post_type ,'side','core', array( 'taxonomy'=>$this->taxonomy ) );
 		endforeach;
 	}
 
@@ -150,7 +150,7 @@ class WordPress_Radio_Taxonomy {
 	            $name = 'radio_tax_input[' . $taxonomy . ']';
 	            echo "<input type='hidden' name='{$name}[]' value='0' />"; // Allows for an empty term set to be sent. 0 is an invalid Term ID and will be ignored by empty() checks.
 	            ?>
-				<ul id="<?php echo $taxonomy; ?>checklist" class="list:<?php echo $taxonomy?> <?php if ( is_taxonomy_hierarchical ( $taxonomy ) ) { echo 'categorychecklist'; } else { echo 'tagchecklist';} ?> form-no-clear">
+				<ul id="<?php echo $taxonomy; ?>checklist" data-wp-lists="list:<?php echo $taxonomy?>" class="<?php if ( is_taxonomy_hierarchical ( $taxonomy ) ) { echo 'categorychecklist'; } else { echo 'tagchecklist';} ?> form-no-clear">
 					<?php wp_terms_checklist($post->ID, array( 'taxonomy' => $taxonomy, 'popular_cats' => $popular_ids ) ) ?>
 				</ul>
 			</div>
@@ -288,10 +288,10 @@ class WordPress_Radio_Taxonomy {
 	 */
 	function get_terms ( $terms, $taxonomies, $args ){
 
-		if ( is_admin() && function_exists( 'get_current_screen') && ! is_wp_error( $screen = get_current_screen() ) && in_array( $screen->id, array( 'post', 'edit-post' ) ) ) {
+		if ( is_admin() && function_exists( 'get_current_screen') && ! is_wp_error( $screen = get_current_screen() ) && in_array( $screen->base, array( 'post', 'edit-post' ) ) ) {
 
 			if( in_array( $this->taxonomy, ( array ) $taxonomies ) && ! in_array( 'category', $taxonomies ) ) {
-				$uncategorized = (object) array( 'term_id' => '0', 'slug' => '0', 'name' => 'No term' );
+				$uncategorized = (object) array( 'term_id' => '0', 'slug' => '0', 'name' => __( 'No term', 'radio-buttons-for-taxonomies' ), 'parent' => '0' );
 				$terms['null'] = $uncategorized;
 			}
 		}
@@ -368,11 +368,11 @@ class WordPress_Radio_Taxonomy {
 
 		if( isset( $this->tax_obj->object_type ) && is_array( $this->tax_obj->object_type ) ) foreach ( $this->tax_obj->object_type as $post_type ){
 			//add taxonomy columns - does not exist in 3.4.2
-			//add_filter( "manage_taxonomies_for_{$post_type}_columns", array(&$this,'remove_tax_columns'), 10, 2 );
+			//add_filter( "manage_taxonomies_for_{$post_type}_columns", array($this,'remove_tax_columns'), 10, 2 );
 
 			//add some hidden data that we'll need for the quickedit
-			add_filter( "manage_{$post_type}_posts_columns", array( &$this, 'add_tax_columns' ) );
-			add_action( "manage_{$post_type}_posts_custom_column", array( &$this, 'custom_tax_columns' ), 99, 2);
+			add_filter( "manage_{$post_type}_posts_columns", array( $this, 'add_tax_columns' ) );
+			add_action( "manage_{$post_type}_posts_custom_column", array( $this, 'custom_tax_columns' ), 99, 2);
 
 		}
 
