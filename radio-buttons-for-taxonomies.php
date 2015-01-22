@@ -3,7 +3,7 @@
 Plugin Name: Radio Buttons for Taxonomies
 Plugin URI: http://www.kathyisawesome.com/441/radio-buttons-for-taxonomies
 Description: Use radio buttons for any taxonomy
-Version: 1.7.1
+Version: 1.7.2
 Text Domain: radio-buttons-for-taxonomies
 Author: Kathy Darling
 Author URI: http://www.kathyisawesome.com
@@ -242,8 +242,8 @@ class Radio_Buttons_for_Taxonomies {
 	 * @since  1.0
 	 */
 	public function admin_script( $hook ){
-		if( 'edit.php' == $hook ){
-			$suffix = defined( 'WP_SCRIPT_DEBUG' ) && WP_SCRIPT_DEBUG ? '' : '.min';
+		if( in_array( $hook, array( 'edit.php', 'post.php', 'post-new.php' ) ) ){
+			$suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
 			wp_enqueue_script( 'radiotax', plugins_url( 'js/radiotax' . $suffix . '.js', __FILE__ ), array( 'jquery', 'inline-edit-post' ), self::$version, true );
 		}
 	}
